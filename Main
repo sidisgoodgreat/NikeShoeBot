@@ -1,0 +1,72 @@
+import requests
+import json
+
+# Replace these values with your own Nike Developer account and app information
+client_id = "YOUR_CLIENT_ID"
+client_secret = "YOUR_CLIENT_SECRET"
+
+# Set up the authentication header
+auth_header = {
+    "client_id": client_id,
+    "client_secret": client_secret
+}
+
+# Set up the search parameters
+search_params = {
+    "q": "Nike Air Force 1",  # Search for Nike Air Force 1 sneakers
+    "limit": 1  # Only return one result
+}
+
+# Send a GET request to the search endpoint
+try:
+    with requests.Session() as session:
+        response = session.get("https://api.nike.com/commerce/productfeed/products/v2", params=search_params, headers=auth_header)
+        response.raise_for_status()
+
+        # Get the product ID of the first result
+        result = response.json()["objects"][0]
+        product_id = result["id"]
+
+        # Set up the payload to add the sneakers to the shopping cart
+        payload = {
+            "productId": product_id,
+            "quantity": 1,  # How much of the product you want to buy
+            "shippingAddress": {
+                "firstName": "John",
+                "lastName": "Doe",
+                "address1": "123 Main St",
+                "city": "New York",
+                "state": "NY",
+                "zipCode": "10001",
+                "country": "US"
+            },
+            "paymentMethod": {
+                "cardNumber": "4111111111111111",  # input your credit card number
+                "cardType": "VISA",
+                "expirationMonth": "12",
+                "expirationYear": "2022",
+                "securityCode": "123"
+            }
+        }
+
+        # Send a POST request to the addToCart endpoint
+        response = session.post("https://api.nike.com/buy/cart/v2", json=payload, headers=auth_header)
+        response.raise_for_status()
+
+        # Get the cart ID
+        cart_id = response.json()["cartId"]
+
+        # Set up the payload to complete the purchase
+        payload = {
+            "cartId": cart_id
+        }
+
+        # Send a POST request to the checkout endpoint
+        response = session.post("https://api.nike.com/buy/checkout/v2", json=payload, headers=auth_header)
+        response.raise_for_status()
+
+        # Print the order
+        print("Order completed successfully")
+
+except requests.exceptions.HTTPError as error:
+    print("Error:", error)
